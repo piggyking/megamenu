@@ -201,7 +201,7 @@ def details1(num):
   h.add(li, 0, n + 5)
   bb = CompactButton('返回') 
   h.add(bb, 0, 14)
-  rc = h.runOnce(44,3)
+  rc = h.runOnce(43,3)
   if rc == "ESC" or "snack.CompactButton" in str(rc):
     return ADPSelect()
   elif li.current() == 1:
@@ -279,7 +279,7 @@ def pdinfo(num):
         if 'None' in pdforeign[n]:
           li.append(str(i).strip('\n').replace('Slot Number','槽位') + "\t大小: " + str(pdsize[n]).strip('\n') + "\t状态: " + str(pdstate[n]).strip('\n').replace(' ',''), n + 1)
         else:
-          li.append(str(i).strip('\n').replace('Slot Number','<Foreign>槽位') + "\t大小: " + str(pdsize[n]).strip('\n') + "\t\t状态: " + str(pdstate[n]).strip('\n').replace(' ',''), n + 1)
+          li.append(str(i).strip('\n').replace('Slot Number','<Foreign>槽位') + "\t大小: " + str(pdsize[n]).strip('\n') + "\t状态: " + str(pdstate[n]).strip('\n').replace(' ',''), n + 1)
         n = n + 1
       g = GridForm(screen, "物理磁盘信息", 1, 10)
       g.add(li, 0, 1)
@@ -301,7 +301,7 @@ def pdinfo(num):
         f.add(li2, 0, 1)
         bb2 = CompactButton('返回')
         f.add(bb2, 0, 2)
-        rf = f.runOnce(44,3)
+        rf = f.runOnce(43,3)
         if rf == 'ESC' or 'snack.CompactButton' in str(rf) :
           return pdinfo(num)
         elif li2.current() == 1:
@@ -405,7 +405,7 @@ def vdinfo(num):
         f.add(li2, 0, 1)
         bb2 = CompactButton('返回')
         f.add(bb2, 0, 2)
-        rf = f.runOnce(44,3)
+        rf = f.runOnce(43,3)
         if rf == 'ESC' or 'snack.CompactButton' in str(rf) :
           return vdinfo(num)
         elif li2.current() == 1:
@@ -460,7 +460,7 @@ def vdinfo(num):
           bb = CompactButton('返回')
           h.add(Textbox(55, 15, gethsp, scroll = 1, wrap = 1), 0, 1)
           h.add(bb, 0, 2)
-          rq = h.runOnce(44,3)
+          rq = h.runOnce(43,3)
           return vdinfo(num)
         elif li2.current() == 4:
           setbootdrv = os.popen(megacli + " -adpbootdrive -set -l" + str(selectDG) + " -a" + num + " -nolog").read()
@@ -502,7 +502,7 @@ def CommandList(num):
   g = GridForm(screen, "命令清单", 1, 10)
   g.add(li, 0, 1)
   g.add(bb, 0, 2)
-  rc = g.runOnce(44, 3)
+  rc = g.runOnce(43, 3)
   if rc == 'ESC' or 'snack.CompactButton' in str(rc) :
     return ADPSelect()
   elif li.current() == 1:
@@ -534,12 +534,13 @@ def AddSDG(num):
   li.append("\tRaid-10", 1)
   li.append("\tRaid-50", 2)
   li.append("\tRaid-60", 3)
-  li.append("\t 返回", 4)
   g = GridForm(screen, "选择RAID级别", 1, 10)
+  bb = CompactButton('返回')
   g.add(li, 0, 1)
-  rc = g.runOnce(44,3)
+  g.add(bb, 0, 2)
+  rc = g.runOnce(43,3)
   SelectRaidLevel = li.current()
-  if li.current() == 4 or rc == 'ESC':
+  if 'snack.CompactButton' in str(rc) or rc == 'ESC':
     return CommandList(num)
   if li.current() == 1:
     if diskcount < 4 :
@@ -609,7 +610,7 @@ def AddSDGR10(num):
         g.add(ct, 0, 2)
         g.add(Label("  "), 1, 2)
         g.add(bb, 0, 3, growx = 1)
-        rc = g.runOnce(44,3)
+        rc = g.runOnce(43,3)
       else:
         warwindows(screen, "警告", "剩余磁盘不足")
         return CommandList(num)
@@ -755,6 +756,8 @@ def AddSDGR10(num):
   g.add(CachePolicyRB, 1, 4)
   g.add(bb, 3, 2, growx = 1)
   rc = g.runOnce(25,3)
+  if rc == 'ESC' or str(bb.buttonPressed(rc)) == "cancel" :
+    return AddSDG(num)
   arraygroup = ''
   for i in j:
     arraygroup = arraygroup + str(i).strip('\n')
@@ -990,6 +993,8 @@ def AddSDGR50(num):
   g.add(CachePolicyRB, 1, 4)
   g.add(bb, 3, 2, growx = 1)
   rc = g.runOnce(25,3)
+  if rc == 'ESC' or str(bb.buttonPressed(rc)) == "cancel" :
+    return AddSDG(num)
   arraygroup = ''
   for i in j:
     arraygroup = arraygroup + str(i).strip('\n')
@@ -1225,6 +1230,8 @@ def AddSDGR60(num):
   g.add(CachePolicyRB, 1, 4)
   g.add(bb, 3, 2, growx = 1)
   rc = g.runOnce(25,3)
+  if rc == 'ESC' or str(bb.buttonPressed(rc)) == "cancel" :
+    return AddSDG(num)
   arraygroup = ''
   for i in j:
     arraygroup = arraygroup + str(i).strip('\n')
@@ -1486,7 +1493,7 @@ def ADPSelect():
     li.setCurrent(adpl)
     h.add(li, 0, 1)
     h.add(bb, 0, 9)
-    rc = h.run(25,3)
+    rc = h.run(24,3)
     if "snack.CompactButton" in str(rc) or rc == 'ESC':
       return mainform()
     else :
@@ -1513,7 +1520,7 @@ def QCCMDList(num):
   g = GridForm(screen, "命令清单", 1, 10)
   g.add(li, 0, 1)
   g.add(bb, 0, 2)
-  rc = g.runOnce(44, 3)
+  rc = g.runOnce(43, 3)
   if rc == 'ESC' or "snack.CompactButton" in str(rc):
     return ADPSelect()
   elif li.current() == 1:
