@@ -1299,7 +1299,8 @@ def AddSDGR60(num):
       warwindows(screen, "已完成", "创建磁盘组成功")
       return CommandList(num)
   else:
-    getre = os.popen(k).readlines()
+    r, t, y = client.exec_command(k)
+    getre = t.readlines()
     if getre == []:
       ss.close()
       warwindows(screen, "警告", "创建磁盘组失败")
