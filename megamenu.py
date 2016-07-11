@@ -186,7 +186,7 @@ def details1(num):
   hsp = os.popen(megacli + " -pdlist -a" + num + " -nolog | grep 'Firmware state: Hotspare' -c").read()
   JBOD = os.popen(megacli + " -pdlist -a" + num + " -nolog | grep JBOD -c").read()
   h = GridForm(screen, "概览", 1, 18)
-  bootdrv = os.popen(megacli + " -adpbootdrive -get -a" + num + " | grep Virtual | awk -F ' ' '{print$7}'").read().replace('#','').strip('/n')
+  bootdrv = os.popen(megacli + " -adpbootdrive -get -a" + num + " -nolog | grep Virtual | awk -F ' ' '{print$7}'").read().replace('#','').strip('/n')
   for i in re:
     n = n + 1
     h.add(TextboxReflowed(40, str(i).replace('Product Name','RAID卡名称').replace('Failed Disks    :','失效磁盘:').replace('Critical Disks  :','高危磁盘:').replace('Disks','物理磁盘数量').replace('Virtual Drives','已创建磁盘组').replace('Enable JBOD','开启JBOD模式').replace(' ','').replace('Offline:','下线磁盘组:').replace('Degraded:','降级磁盘组:').strip("\n"), flexDown = 5, flexUp = 10, maxHeight = -1), 0, n)
@@ -617,7 +617,7 @@ def AddSDGR10(num):
         rx = conformwindows(screen, "磁盘组已经配置完毕？")
         if rx[0] == "否" or rx[1] == "ESC":
           rxx = conformwindows(screen, "要继续配置吗？")
-          if rxx[0] == "否" or rx[1] == "ESC":
+          if rxx[0] == "否" or rxx[1] == "ESC":
             return CommandList(num)
           else:
             continue
@@ -633,8 +633,8 @@ def AddSDGR10(num):
           if n == 0:
             warwindows(screen, "警告", "至少选择一块磁盘")
             continue
-          elif n < 2 or n % 2 != 0:
-            warwindows(screen, "警告", "需要磁盘数量为2的倍数")
+          elif n != 2:
+            warwindows(screen, "警告", "只能选择两块磁盘")
             continue
           size = str(pdsize2[0]).strip('\n')
           for i in pdsize2:
@@ -684,8 +684,8 @@ def AddSDGR10(num):
         if n == 0:
           warwindows(screen, "警告", "至少选择一块磁盘")
           continue
-        elif n < 2 or n % 2 != 0:
-          warwindows(screen, "警告", "需要磁盘数量为2的倍数")
+        elif n != 2:
+          warwindows(screen, "警告", "只能选择两块磁盘")
           continue
         size = str(pdsize2[0]).strip('\n')
         for i in pdsize2:
@@ -852,7 +852,7 @@ def AddSDGR50(num):
         rx = conformwindows(screen, "磁盘组已经配置完毕？")
         if rx[0] == "否" or rx[1] == "ESC":
           rxx = conformwindows(screen, "要继续配置吗？")
-          if rxx[0] == "否" or rx[1] == "ESC":
+          if rxx[0] == "否" or rxx[1] == "ESC":
             return CommandList(num)
           else:
             continue
@@ -1087,7 +1087,7 @@ def AddSDGR60(num):
         rx = conformwindows(screen, "磁盘组已经配置完毕？")
         if rx[0] == "否" or rx[1] == "ESC":
           rxx = conformwindows(screen, "要继续配置吗？")
-          if rxx[0] == "否" or rx[1] == "ESC":
+          if rxx[0] == "否" or rxx[1] == "ESC":
             return CommandList(num)
           else:
             continue
@@ -1412,8 +1412,8 @@ def AddDG(num):
           warwindows(screen, "警告", "至少选择一块磁盘")
           return AddDG(num)
         if str(RAIDLevel).strip('\n') == " -r1":
-          if n < 2 or n % 2 != 0:
-            warwindows(screen, "警告", "RAID-1需要至少2块或2的倍数磁盘")
+          if n != 2:
+            warwindows(screen, "警告", "RAID-1只能选择两块磁盘")
             return AddDG(num)
         elif str(RAIDLevel).strip('\n') == " -r5":
           if n < 3 or n > 12:
