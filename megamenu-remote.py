@@ -433,12 +433,13 @@ def vdinfo(num):
         return details1(num)
       else:
         selectDG = int(li.current() - 1)
-        li2 = Listbox(height = 7, width = 43, returnExit = 1, showCursor = 0, scroll = 1)
+        li2 = Listbox(height = 9, width = 43, returnExit = 1, showCursor = 0, scroll = 1)
         li2.append("查看" + str(vdshow[selectDG].replace('SPANNED DISK GROUP','组合磁盘组').replace('DISK GROUP','普通磁盘组')).strip('\n') + " 的详细信息", 1)
         li2.append("指定" + str(vdshow[selectDG].replace('SPANNED DISK GROUP','组合磁盘组').replace('DISK GROUP','普通磁盘组')).strip('\n') + " 的热备盘", 2)
         if int(vdhsp[selectDG]) != 0:
           li2.append("查看" + str(vdshow[selectDG].replace('SPANNED DISK GROUP','组合磁盘组').replace('DISK GROUP','普通磁盘组')).strip('\n') + " 的热备盘", 3)
         li2.append("指定" + str(vdshow[selectDG].replace('SPANNED DISK GROUP','组合磁盘组').replace('DISK GROUP','普通磁盘组')).strip('\n') + " 为BOOT磁盘组", 4)
+        li2.append("设定" + str(vdshow[selectDG].replace('SPANNED DISK GROUP','组合磁盘组').replace('DISK GROUP','普通磁盘组')).strip('\n') + " 的缓存策略", 5)
         f = GridForm(screen, "请选择", 1, 10)
         f.add(li2, 0, 1)
         bb2 = CompactButton('返回')
@@ -510,6 +511,45 @@ def vdinfo(num):
             return vdinfo(num)
           warwindows(screen, "警告", "BOOT磁盘组设置失败")
           return vdinfo(num)
+        elif li2.current() == 5:
+          r, t, y = client.exec_command(megacli + " -ldinfo -l" + str(selectDG) + " -a" + num + " -nolog | egrep 'Current Cache Policy|Disk Cache Policy'")
+          currentcachepolicy = t.read()
+          CachePolicyRB = RadioBar(screen, (("强制打开", " -ForcedWB", 0), ("打开", " -wt", 0), ("关闭", " -wb", 1)))
+          RAPolicyRB = RadioBar(screen, (("打开", " -ra", 1), ("关闭", " -nora", 0), ("自适应", " -adra", 0)))
+          DiskCachePolicyRB = RadioBar(screen, (("关闭", " -DisDskCache", 1), ("打开", " -EnDskCache", 0)))
+          BBUPolicyRB = RadioBar(screen, (("否", " -nocachedbadbbu", 1), ("是", " -cachedbadbbu", 0)))
+          bb = ButtonBar(screen, (("确定", "ok"), ("取消", "cancel")))
+          g = GridForm(screen, str(vdshow[selectDG].replace('SPANNED DISK GROUP','组合磁盘组').replace('DISK GROUP','普通磁盘组')).strip('\n') + " 缓存策略", 4, 10)
+          g.add(Textbox(40, 5, "当前缓存状态：\n" + currentcachepolicy, wrap = 1), 3, 6)
+          g.add(TextboxReflowed(10, "RAID卡缓存", flexDown = 5, flexUp = 10, maxHeight = -1), 1, 2)
+          g.add(CachePolicyRB, 1, 3)
+          g.add(TextboxReflowed(10, "预读选项", flexDown = 5, flexUp = 10, maxHeight = -1), 1, 4)
+          g.add(RAPolicyRB, 1, 5)
+          g.add(TextboxReflowed(10, "磁盘缓存策略", flexDown = 5, flexUp = 10, maxHeight = -1), 2, 2)
+          g.add(DiskCachePolicyRB, 2, 3)
+          g.add(bb, 3, 7)
+          rc = g.runOnce(25,3)
+          if rc == 'ESC' or bb.buttonPressed(rc) == 'cancel':
+            return details1(num)
+          CachePolicy = str(CachePolicyRB.getSelection()).strip('\n')
+          RAPolicy = str(RAPolicyRB.getSelection()).strip('\n')
+          DiskCachePolicy = str(DiskCachePolicyRB.getSelection()).strip('\n')
+          k = []
+          if CachePolicy == ' -wb':
+            k.append(megacli + " -LDSetProp -NoCachedBadBBU -l" +str(selectDG) + " -a" + num + " -nolog")
+          k.append(megacli + " -LDSetProp" + CachePolicy + " -l" +str(selectDG) + " -a" + num + " -nolog")
+          k.append(megacli + " -LDSetProp" + RAPolicy + " -l" +str(selectDG) + " -a" + num + " -nolog")
+          k.append(megacli + " -LDSetProp -Direct -l" +str(selectDG) + " -a" + num + " -nolog")
+          k.append(megacli + " -LDSetProp" + DiskCachePolicy + " -l" +str(selectDG) + " -a" + num + " -nolog")
+          for i in k:
+            r, t, y = client.exec_command(i)
+            success = t.read()
+            if "success" not in success:
+              warwindows(screen, "警告", "设置失败")
+              break
+              return details1(num)
+          warwindows(screen, "完成", "已重新设置磁盘策略")
+          return details1(num)
     else:
       warwindows(screen, "警告", "还未创建磁盘组")
       return details1(num)
@@ -809,7 +849,7 @@ def AddSDGR10(num):
   DiskCachePolicy = DiskCachePolicyRB.getSelection()
   BBUPolicy = BBUPolicyRB.getSelection()
   StripSize = StripSizeRB.getSelection()
-  k = megacli + " -cfgspanadd -r10" + arraygroup + str(RAPolicy).strip('\n') + " -cached" + str(BBUPolicy).strip('\n') + str(StripSize).strip('\n') + " -a" + str(num).strip('\n') + " -nolog | grep VD | awk -F ' ' '{print$5}'"
+  k = megacli + " -cfgspanadd -r10" + arraygroup + str(RAPolicy).strip('\n') + " -Direct" + str(BBUPolicy).strip('\n') + str(StripSize).strip('\n') + " -a" + str(num).strip('\n') + " -nolog | grep VD | awk -F ' ' '{print$5}'"
   if str(DiskCachePolicy).strip('\n') != "on":
     ss = ProWin(screen, "请等待", "创建磁盘组中")
     ss.show()
@@ -1048,7 +1088,7 @@ def AddSDGR50(num):
   DiskCachePolicy = DiskCachePolicyRB.getSelection()
   BBUPolicy = BBUPolicyRB.getSelection()
   StripSize = StripSizeRB.getSelection()
-  k = megacli + " -cfgspanadd -r50" + arraygroup + str(RAPolicy).strip('\n') + " -cached" + str(BBUPolicy).strip('\n') + str(StripSize).strip('\n') + " -a" + str(num).strip('\n') + " -nolog | grep VD | awk -F ' ' '{print$5}'"
+  k = megacli + " -cfgspanadd -r50" + arraygroup + str(RAPolicy).strip('\n') + " -Direct" + str(BBUPolicy).strip('\n') + str(StripSize).strip('\n') + " -a" + str(num).strip('\n') + " -nolog | grep VD | awk -F ' ' '{print$5}'"
   if str(DiskCachePolicy).strip('\n') != "on":
     ss = ProWin(screen, "请等待", "创建磁盘组中")
     ss.show()
@@ -1287,7 +1327,7 @@ def AddSDGR60(num):
   DiskCachePolicy = DiskCachePolicyRB.getSelection()
   BBUPolicy = BBUPolicyRB.getSelection()
   StripSize = StripSizeRB.getSelection()
-  k = megacli + " -cfgspanadd -r60" + arraygroup + str(RAPolicy).strip('\n') + " -cached" + str(BBUPolicy).strip('\n') + str(StripSize).strip('\n') + " -a" + str(num).strip('\n') + " -nolog | grep VD | awk -F ' ' '{print$5}'"
+  k = megacli + " -cfgspanadd -r60" + arraygroup + str(RAPolicy).strip('\n') + " -Direct" + str(BBUPolicy).strip('\n') + str(StripSize).strip('\n') + " -a" + str(num).strip('\n') + " -nolog | grep VD | awk -F ' ' '{print$5}'"
   if str(DiskCachePolicy).strip('\n') != "on":
     ss = ProWin(screen, "请等待", "创建磁盘组中")
     ss.show()
@@ -1493,7 +1533,7 @@ def AddDG(num):
         for i in DiskSelection2:
           j = j + str(i).strip('\n')
         j = j.rstrip(',') + "]"
-        k = megacli + " -cfgldadd" + str(RAIDLevel).strip('\n') + j.strip('\n') + str(CachePolicy).strip('\n') + str(RAPolicy).strip('\n') + " -cached" + str(BBUPolicy).strip('\n') + str(StripSize).strip('\n') + " -a" + str(num).strip('\n') + " -nolog | grep VD | awk -F ' ' '{print$5}'"
+        k = megacli + " -cfgldadd" + str(RAIDLevel).strip('\n') + j.strip('\n') + str(CachePolicy).strip('\n') + str(RAPolicy).strip('\n') + " -Direct" + str(BBUPolicy).strip('\n') + str(StripSize).strip('\n') + " -a" + str(num).strip('\n') + " -nolog | grep VD | awk -F ' ' '{print$5}'"
         if str(DiskCachePolicy).strip('\n') != "on":
           ss = ProWin(screen, "请等待", "创建磁盘组中")
           ss.show()
@@ -1597,7 +1637,7 @@ def MakeAllRaid0(num):
   ss = ProWin(screen, "请等待", "创建磁盘组中")
   ss.show()
   ss.update(3)
-  r, t, y = client.exec_command(megacli + " -CfgEachDskRaid0 -wt -ra -cached -nocachedbadbbu -strpsz128 -a" + str(num).strip('\n') + " -nolog | grep 'Created VD' | awk -F ' ' '{print$5}'")
+  r, t, y = client.exec_command(megacli + " -CfgEachDskRaid0 -wt -ra -Direct -nocachedbadbbu -strpsz128 -a" + str(num).strip('\n') + " -nolog | grep 'Created VD' | awk -F ' ' '{print$5}'")
   k = t.readlines()
   if k ==[]:
     ss.close()
@@ -1837,21 +1877,25 @@ while out != 1:
       ss.close()
       connectok = 1
     except:
-      screen.finish()
-      print traceback.format_exc()
-      print "指定的参数无效"
-      break
+      ss.close()
+      warwindows(screen, "警告", "指定的参数无效")
+      connectok = 0
+      config()
+      continue
     megacli = "/tmp/MegaCli64"
     r , test, t = client.exec_command(megacli + " -v -nolog")
     test = test.read()
     if "Exit Code: 0x00" in test: 
       main()
     else:
-      screen.finish()
-      print "远程命令执行失败"
-      break
+      warwindows(screen, "警告", "远程命令执行失败")
+      connectok = 0
+      config()
+      continue
   else:
-    warwindows(screen, "警告", "远程链接建立失败")
-    getconfig = config()
+    warwindows(screen, "警告", "各项参数不能为空")
+    connectok = 0
+    config()
+    continue
 screen.finish()
 print "感谢使用!"
