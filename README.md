@@ -30,8 +30,11 @@ v0.92-remote beta
 发布时间：2016.7.17
 
 1、改善远程管理程序配置时出错后的友好程度；
+
 2、增加修改磁盘组缓存设置的功能；
+
 3、BUG修正；
+
 4、文字优化。
 
 
@@ -44,8 +47,11 @@ v0.91-remote beta
 
 说明：
 默认将程序运行目录下的storcli64传输到远端的/tmp目录下，可以根据需要将MegaCli/perccli等工具改名为storcli64（比如storcli64运行出错时），当然也可以直接修改Python脚本:D。
+
 远程能力需要Python的paramiko模块支持，我把pip放在解压后的根目录下了，先安装pip，然后进入paramiko目录pip install * 。
+
 如果有外网的情况下，也可以pip install paramiko或是直接下载paramiko安装包安装。
+
 建议使用pip安装，相对简单些。
 
 --------------------------------
