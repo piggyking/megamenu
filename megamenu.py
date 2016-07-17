@@ -201,7 +201,7 @@ def details1(num):
   h.add(li, 0, n + 5)
   bb = CompactButton('返回') 
   h.add(bb, 0, 14)
-  rc = h.runOnce(44,3)
+  rc = h.runOnce(43,3)
   if rc == "ESC" or "snack.CompactButton" in str(rc):
     return ADPSelect()
   elif li.current() == 1:
@@ -279,7 +279,7 @@ def pdinfo(num):
         if 'None' in pdforeign[n]:
           li.append(str(i).strip('\n').replace('Slot Number','槽位') + "\t大小: " + str(pdsize[n]).strip('\n') + "\t状态: " + str(pdstate[n]).strip('\n').replace(' ',''), n + 1)
         else:
-          li.append(str(i).strip('\n').replace('Slot Number','<Foreign>槽位') + "\t大小: " + str(pdsize[n]).strip('\n') + "\t\t状态: " + str(pdstate[n]).strip('\n').replace(' ',''), n + 1)
+          li.append(str(i).strip('\n').replace('Slot Number','<Foreign>槽位') + "\t大小: " + str(pdsize[n]).strip('\n') + "\t状态: " + str(pdstate[n]).strip('\n').replace(' ',''), n + 1)
         n = n + 1
       g = GridForm(screen, "物理磁盘信息", 1, 10)
       g.add(li, 0, 1)
@@ -301,7 +301,7 @@ def pdinfo(num):
         f.add(li2, 0, 1)
         bb2 = CompactButton('返回')
         f.add(bb2, 0, 2)
-        rf = f.runOnce(44,3)
+        rf = f.runOnce(43,3)
         if rf == 'ESC' or 'snack.CompactButton' in str(rf) :
           return pdinfo(num)
         elif li2.current() == 1:
@@ -401,11 +401,12 @@ def vdinfo(num):
         if int(vdhsp[selectDG]) != 0:
           li2.append("查看" + str(vdshow[selectDG].replace('SPANNED DISK GROUP','组合磁盘组').replace('DISK GROUP','普通磁盘组')).strip('\n') + " 的热备盘", 3)
         li2.append("指定" + str(vdshow[selectDG].replace('SPANNED DISK GROUP','组合磁盘组').replace('DISK GROUP','普通磁盘组')).strip('\n') + " 为BOOT磁盘组", 4)
+        li2.append("设定" + str(vdshow[selectDG].replace('SPANNED DISK GROUP','组合磁盘组').replace('DISK GROUP','普通磁盘组')).strip('\n') + " 的缓存策略", 5)
         f = GridForm(screen, "请选择", 1, 10)
         f.add(li2, 0, 1)
         bb2 = CompactButton('返回')
         f.add(bb2, 0, 2)
-        rf = f.runOnce(44,3)
+        rf = f.runOnce(43,3)
         if rf == 'ESC' or 'snack.CompactButton' in str(rf) :
           return vdinfo(num)
         elif li2.current() == 1:
@@ -460,7 +461,7 @@ def vdinfo(num):
           bb = CompactButton('返回')
           h.add(Textbox(55, 15, gethsp, scroll = 1, wrap = 1), 0, 1)
           h.add(bb, 0, 2)
-          rq = h.runOnce(44,3)
+          rq = h.runOnce(43,3)
           return vdinfo(num)
         elif li2.current() == 4:
           setbootdrv = os.popen(megacli + " -adpbootdrive -set -l" + str(selectDG) + " -a" + num + " -nolog").read()
@@ -468,6 +469,42 @@ def vdinfo(num):
             warwindows(screen, "完成", "BOOT磁盘组设置成功")
             return vdinfo(num)
           warwindows(screen, "警告", "BOOT磁盘组设置失败")
+          return vdinfo(num)
+        elif li2.current() == 5:
+          currentcachepolicy = os.popen(megacli + " -ldinfo -l" + str(selectDG) + " -a" + num + " -nolog | egrep 'Current Cache Policy|Disk Cache Policy'").read()
+          CachePolicyRB = RadioBar(screen, (("强制打开", " -ForcedWB", 0), ("打开", " -wb", 0), ("关闭", " -wt", 1)))
+          RAPolicyRB = RadioBar(screen, (("打开", " -ra", 1), ("关闭", " -nora", 0), ("自适应", " -adra", 0)))
+          DiskCachePolicyRB = RadioBar(screen, (("关闭", " -DisDskCache", 1), ("打开", " -EnDskCache", 0)))
+          bb = ButtonBar(screen, (("确定", "ok"), ("取消", "cancel")))
+          g = GridForm(screen, str(vdshow[selectDG].replace('SPANNED DISK GROUP','组合磁盘组').replace('DISK GROUP','普通磁盘组')).strip('\n') + " 缓存策略", 4, 10)
+          g.add(Textbox(40, 5, "当前缓存状态：\n" + currentcachepolicy, wrap = 1), 3, 6)
+          g.add(TextboxReflowed(10, "RAID卡缓存", flexDown = 5, flexUp = 10, maxHeight = -1), 1, 2)
+          g.add(CachePolicyRB, 1, 3)
+          g.add(TextboxReflowed(10, "预读选项", flexDown = 5, flexUp = 10, maxHeight = -1), 1, 4)
+          g.add(RAPolicyRB, 1, 5)
+          g.add(TextboxReflowed(10, "磁盘缓存策略", flexDown = 5, flexUp = 10, maxHeight = -1), 2, 2)
+          g.add(DiskCachePolicyRB, 2, 3)
+          g.add(bb, 3, 7)
+          rc = g.runOnce(25,3)
+          if rc == 'ESC' or bb.buttonPressed(rc) == 'cancel':
+            return details1(num)
+          CachePolicy = str(CachePolicyRB.getSelection()).strip('\n')
+          RAPolicy = str(RAPolicyRB.getSelection()).strip('\n')
+          DiskCachePolicy = str(DiskCachePolicyRB.getSelection()).strip('\n')
+          k = []
+          if CachePolicy == ' -wb':
+            k.append(megacli + " -LDSetProp -NoCachedBadBBU -l" +str(selectDG) + " -a" + num + " -nolog")
+          k.append(megacli + " -LDSetProp" + CachePolicy + " -l" +str(selectDG) + " -a" + num + " -nolog")
+          k.append(megacli + " -LDSetProp" + RAPolicy + " -l" +str(selectDG) + " -a" + num + " -nolog")
+          k.append(megacli + " -LDSetProp -Direct -l" +str(selectDG) + " -a" + num + " -nolog")
+          k.append(megacli + " -LDSetProp" + DiskCachePolicy + " -l" +str(selectDG) + " -a" + num + " -nolog")
+          for i in k:
+            success = os.popen(i).read()
+            if "success" not in success:
+              warwindows(screen, "警告", "设置失败")
+              break
+              return vdinfo(num)
+          warwindows(screen, "完成", "已重新设置磁盘策略")
           return vdinfo(num)
     else:
       warwindows(screen, "警告", "还未创建磁盘组")
@@ -502,7 +539,7 @@ def CommandList(num):
   g = GridForm(screen, "命令清单", 1, 10)
   g.add(li, 0, 1)
   g.add(bb, 0, 2)
-  rc = g.runOnce(44, 3)
+  rc = g.runOnce(43, 3)
   if rc == 'ESC' or 'snack.CompactButton' in str(rc) :
     return ADPSelect()
   elif li.current() == 1:
@@ -534,12 +571,13 @@ def AddSDG(num):
   li.append("\tRaid-10", 1)
   li.append("\tRaid-50", 2)
   li.append("\tRaid-60", 3)
-  li.append("\t 返回", 4)
   g = GridForm(screen, "选择RAID级别", 1, 10)
+  bb = CompactButton('返回')
   g.add(li, 0, 1)
-  rc = g.runOnce(44,3)
+  g.add(bb, 0, 2)
+  rc = g.runOnce(43,3)
   SelectRaidLevel = li.current()
-  if li.current() == 4 or rc == 'ESC':
+  if 'snack.CompactButton' in str(rc) or rc == 'ESC':
     return CommandList(num)
   if li.current() == 1:
     if diskcount < 4 :
@@ -609,7 +647,7 @@ def AddSDGR10(num):
         g.add(ct, 0, 2)
         g.add(Label("  "), 1, 2)
         g.add(bb, 0, 3, growx = 1)
-        rc = g.runOnce(44,3)
+        rc = g.runOnce(43,3)
       else:
         warwindows(screen, "警告", "剩余磁盘不足")
         return CommandList(num)
@@ -755,6 +793,8 @@ def AddSDGR10(num):
   g.add(CachePolicyRB, 1, 4)
   g.add(bb, 3, 2, growx = 1)
   rc = g.runOnce(25,3)
+  if rc == 'ESC' or str(bb.buttonPressed(rc)) == "cancel" :
+    return AddSDG(num)
   arraygroup = ''
   for i in j:
     arraygroup = arraygroup + str(i).strip('\n')
@@ -990,6 +1030,8 @@ def AddSDGR50(num):
   g.add(CachePolicyRB, 1, 4)
   g.add(bb, 3, 2, growx = 1)
   rc = g.runOnce(25,3)
+  if rc == 'ESC' or str(bb.buttonPressed(rc)) == "cancel" :
+    return AddSDG(num)
   arraygroup = ''
   for i in j:
     arraygroup = arraygroup + str(i).strip('\n')
@@ -1225,6 +1267,8 @@ def AddSDGR60(num):
   g.add(CachePolicyRB, 1, 4)
   g.add(bb, 3, 2, growx = 1)
   rc = g.runOnce(25,3)
+  if rc == 'ESC' or str(bb.buttonPressed(rc)) == "cancel" :
+    return AddSDG(num)
   arraygroup = ''
   for i in j:
     arraygroup = arraygroup + str(i).strip('\n')
@@ -1486,7 +1530,7 @@ def ADPSelect():
     li.setCurrent(adpl)
     h.add(li, 0, 1)
     h.add(bb, 0, 9)
-    rc = h.run(25,3)
+    rc = h.run(24,3)
     if "snack.CompactButton" in str(rc) or rc == 'ESC':
       return mainform()
     else :
@@ -1513,7 +1557,7 @@ def QCCMDList(num):
   g = GridForm(screen, "命令清单", 1, 10)
   g.add(li, 0, 1)
   g.add(bb, 0, 2)
-  rc = g.runOnce(44, 3)
+  rc = g.runOnce(43, 3)
   if rc == 'ESC' or "snack.CompactButton" in str(rc):
     return ADPSelect()
   elif li.current() == 1:
@@ -1661,7 +1705,7 @@ def mainform():
   g.add(Label(" "),0,3)
   g.add(Label("[LSI RAID卡]"),0,4)
   g.add(Label("[配置程序]"),0,5)
-  screen.pushHelpLine("<Version 0.91 beta> Powered by Patrick Zheng...请使用TAB在选项间切换")
+  screen.pushHelpLine("<Version 0.92 beta> Powered by Patrick Zheng...请使用TAB在选项间切换")
   rc=g.run(1,3)
   mainl = li.current()
   if rc == 'ESC' or 'snack.CompactButton' in str(rc) :
